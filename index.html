@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tirage au sort de Noël 🎄</title>
+<style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 2em; background-color: #f9f3f0; }
+    h1 { color: #d32f2f; }
+    button { padding: 0.5em 1em; font-size: 1em; margin-top: 1em; cursor: pointer; }
+    select { padding: 0.5em; font-size: 1em; }
+    #result { margin-top: 2em; font-size: 1.5em; color: #2e7d32; font-weight: bold; min-height: 2em; }
+    canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; }
+</style>
+</head>
+<body>
+<h1>Tirage au sort de Noël 🎄</h1>
+
+<p>Choisis ton nom :</p>
+<select id="yourName"></select>
+<br>
+<button id="drawBtn">Tirer au sort</button>
+<button id="resetBtn">Réinitialiser le tirage</button>
+
+<div id="result"></div>
+<canvas id="confetti"></canvas>
+
+<script>
+// Liste initiale des invités
+let guests = ["Martin", "Lénaëlle", "Emilie", "Quentin", "Patricia", "Michel", "Jean-Michel", "Antoine","Marie","Didier","Lionel"];
+let available = [...guests];
+let alreadyDrawn = JSON.parse(localStorage.getItem("alreadyDrawn")) || {};
+
+// Remplir le menu déroulant
+function fillDropdown() {
+    let select = document.getElementById("yourName");
+    select.innerHTML = '';
+    guests.forEach(name => {
+        if (!alreadyDrawn[name]) {
+            let option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            select.appendChild(option);
+        }
+    });
+}
+fillDropdown();
+
+// Tirage avec suspense
+document.getElementById("drawBtn").addEventListener("click", () => {
+    let select = document.getElementById("yourName");
+    let yourName = select.value;
+    if (!yourName) return alert("Choisis ton nom.");
+
+    // Possibles tirages réels
+    let possible = available.filter(name => name !== yourName);
+    if (possible.length === 0) {
+        document.getElementById("result").textContent = "Désolé, plus personne à tirer.";
+        return;
+    }
+
+    // Animation suspense : montrer tous les noms initiaux
+    let resultDiv = document.getElementById("result");
+    let i = 0;
+    let suspense = setInterval(() => {
+        let randomName = guests[Math.floor(Math.random() * guests.length)];
+        resultDiv.textContent = `🎁 ${randomName} 🎁`;
+        i++;
+    }, 100);
+
+    // Après 2 secondes, afficher le vrai tirage parmi les disponibles
+    setTimeout(() => {
+        clearInterval(suspense);
+        let index = Math.floor(Math.random() * possible.length);
+        let drawn = possible[index];
+
+        // Retirer le nom tiré de la liste disponible
+        available = available.filter(name => name !== drawn);
+
+        // Marquer l’invité comme ayant tiré
+        alreadyDrawn[yourName] = true;
+        localStorage.setItem("alreadyDrawn", JSON.stringify(alreadyDrawn));
+        fillDropdown();
+
+        // Afficher le résultat
+        resultDiv.textContent = `Tu offres un cadeau à : ${drawn} 🎁`;
+        launchConfetti();
+    }, 2000);
+});
+
+// Réinitialiser le tirage
+document.getElementById("resetBtn").addEventListener("click", () => {
+    if (!confirm("Veux-tu vraiment réinitialiser le tirage ?")) return;
+    alreadyDrawn = {};
+    available = [...guests];
+    localStorage.removeItem("alreadyDrawn");
+    fillDropdown();
+    document.getElementById("result").textContent = "";
+});
+
+// Confettis
+const canvas = document.getElementById("confetti");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let confettis = [];
+
+function createConfetti() {
+    for (let i = 0; i < 150; i++) {
+        confettis.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            r: Math.random() * 6 + 4,
+            d: Math.random() * 20 + 10,
+            color: `hsl(${Math.random()*360}, 100%, 50%)`,
+            tilt: Math.random() * 10 - 10,
+            tiltAngleIncremental: Math.random() * 0.07 + 0.05,
+            tiltAngle: 0
+        });
+    }
+}
+
+function drawConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    confettis.forEach((c, i) => {
+        ctx.beginPath();
+        ctx.lineWidth = c.r / 2;
+        ctx.strokeStyle = c.color;
+        ctx.moveTo(c.x + c.tilt + c.r / 4, c.y);
+        ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 4);
+        ctx.stroke();
+        c.tiltAngle += c.tiltAngleIncremental;
+        c.y += (Math.cos(c.d) + 3 + c.r / 2) / 2;
+        c.tilt = Math.sin(c.tiltAngle) * 15;
+        if (c.y > canvas.height) confettis.splice(i, 1);
+    });
+}
+
+function launchConfetti() {
+    confettis = [];
+    createConfetti();
+    let confettiInterval = setInterval(() => {
+        drawConfetti();
+        if (confettis.length === 0) clearInterval(confettiInterval);
+    }, 20);
+}
+
+// Adapter le canvas à la fenêtre
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
