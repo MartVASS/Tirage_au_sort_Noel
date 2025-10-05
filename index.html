@@ -111,11 +111,17 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
     }, 2000);
 });
 
-// Réinitialiser
+// Réinitialiser (avec mot de passe simple)
 document.getElementById("resetBtn").addEventListener("click", () => {
-    if (!confirm("Veux-tu vraiment réinitialiser le tirage ?")) return;
+    const code = prompt("🎅 Entre le mot de passe pour réinitialiser :");
+    if (code !== "noel2025") {
+        alert("⛔ Mot de passe incorrect !");
+        return;
+    }
+    if (!confirm("Veux-tu vraiment tout réinitialiser ?")) return;
     db.ref('tirage').set({alreadyDrawn: {}, drawnFor: {}});
     document.getElementById("result").textContent = "";
+    alert("✅ Tirage réinitialisé !");
 });
 
 // ====== CONFETTIS ======
@@ -172,4 +178,5 @@ window.addEventListener("resize", () => {
 </script>
 </body>
 </html>
+
 
