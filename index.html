@@ -25,6 +25,13 @@
 <div id="result"></div>
 <canvas id="confetti"></canvas>
 
+<!-- Musique de Noël -->
+<audio id="bgMusic" loop>
+  <source src="https://www.bensound.com/bensound-music/bensound-christmas.mp3" type="audio/mpeg">
+  Ton navigateur ne supporte pas la musique de fond.
+</audio>
+<button id="musicToggle" style="position: fixed; bottom: 10px; left: 10px; z-index: 10001; padding:5px 10px;">🔊 Musique</button>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -77,7 +84,6 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
     const alreadyDrawn = data.alreadyDrawn || {};
     const drawnFor = data.drawnFor || {};
 
-    // Liste des noms possibles à tirer
     let possible = guests.filter(name => name !== yourName && !Object.values(drawnFor).includes(name));
     if (possible.length === 0) {
         document.getElementById("result").textContent = "Désolé, plus personne à tirer.";
@@ -89,43 +95,34 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
     // ----- ANIMATION SUSPENSE -----
     function suspenseAnimation(possible, finalCallback) {
         let startTime = Date.now();
-        let duration = 2000; // durée totale animation
+        let duration = 2000;
 
         function animate() {
             let elapsed = Date.now() - startTime;
             if (elapsed >= duration) {
-                // Choisir le nom final
                 let index = Math.floor(Math.random() * possible.length);
                 let drawn = possible[index];
                 finalCallback(drawn);
                 return;
             }
 
-            // Nom aléatoire parmi tous les invités pour l'effet suspense
             let randomName = guests[Math.floor(Math.random() * guests.length)];
-
-            // Variation visuelle
             resultDiv.textContent = `🎁 ${randomName} 🎁`;
             resultDiv.style.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
             resultDiv.style.fontSize = 20 + Math.random() * 15 + "px";
 
-            // Ralentissement progressif
             let progress = elapsed / duration;
-            let interval = 50 + progress * 200; // commence rapide, finit lent
+            let interval = 50 + progress * 200;
             setTimeout(animate, interval);
         }
-
         animate();
     }
 
-    // Lancer l'animation suspense
     suspenseAnimation(possible, (drawn) => {
-        // Mettre à jour Firebase
         alreadyDrawn[yourName] = true;
         drawnFor[yourName] = drawn;
         db.ref('tirage').set({alreadyDrawn, drawnFor});
 
-        // Afficher résultat final
         resultDiv.textContent = `Tu offres un cadeau à : ${drawn} 🎁`;
         launchConfetti();
     });
@@ -210,6 +207,25 @@ function createSnowflake() {
 }
 setInterval(createSnowflake, 200);
 
+// ====== MUSIQUE DE FOND ======
+const bgMusic = document.getElementById("bgMusic");
+const musicToggle = document.getElementById("musicToggle");
+
+// Lancer musique au premier clic sur la page
+window.addEventListener("click", () => {
+    if (bgMusic.paused) bgMusic.play().catch(() => {});
+}, { once: true });
+
+// Bouton activer / désactiver musique
+musicToggle.addEventListener("click", () => {
+    if (bgMusic.paused) {
+        bgMusic.play();
+        musicToggle.textContent = "🔇 Musique";
+    } else {
+        bgMusic.pause();
+        musicToggle.textContent = "🔊 Musique";
+    }
+});
 </script>
 
 <style>
@@ -221,9 +237,8 @@ setInterval(createSnowflake, 200);
     animation-name: fall;
     animation-timing-function: linear;
 }
-@keyframes fall {
-    to { transform: translateY(110vh); }
-}
+@keyframes fall { to { transform: translateY(110vh); } }
+
 #version {
     position: fixed;
     bottom: 10px;
@@ -239,10 +254,8 @@ setInterval(createSnowflake, 200);
 </style>
 
 <div id="version"></div>
-
 <script>
-  // Version affichée en bas à droite
-  const version = "v1.0.3"; // 🆕 change ce numéro à chaque mise à jour
+  const version = "v1.0.4"; // change à chaque mise à jour
   document.getElementById("version").textContent = "Version " + version;
 </script>
 
