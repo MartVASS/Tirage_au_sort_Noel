@@ -211,8 +211,33 @@ setInterval(createSnowflake, 200);
 }
 </style>
 
+    <div id="version"></div>
+
+<style>
+#version {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    color: #b71c1c;
+    font-size: 0.9em;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 10px;
+    border-radius: 10px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    font-weight: bold;
+}
+</style>
+
+<script>
+  // Version affichée en bas à droite
+  const version = "v1.0.1"; // 🆕 change ce numéro à chaque mise à jour
+  document.getElementById("version").textContent = "Version " + version;
+</script>
+
+
 </body>
 </html>
+
 
 
 
