@@ -176,7 +176,43 @@ window.addEventListener("resize", () => {
     canvas.height = window.innerHeight;
 });
 </script>
+    <!-- ❄️ NEIGE ANIMÉE -->
+<script>
+function createSnowflake() {
+    const snowflake = document.createElement("div");
+    snowflake.classList.add("snowflake");
+    snowflake.textContent = "❄️";
+    snowflake.style.left = Math.random() * 100 + "vw";
+    snowflake.style.animationDuration = 5 + Math.random() * 5 + "s";
+    snowflake.style.opacity = Math.random();
+    snowflake.style.fontSize = 10 + Math.random() * 20 + "px";
+    document.body.appendChild(snowflake);
+
+    setTimeout(() => snowflake.remove(), 10000);
+}
+
+setInterval(createSnowflake, 200);
+</script>
+
+<style>
+.snowflake {
+    position: fixed;
+    top: -2em;
+    z-index: 10000;
+    pointer-events: none;
+    animation-name: fall;
+    animation-timing-function: linear;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(110vh);
+    }
+}
+</style>
+
 </body>
 </html>
+
 
 
