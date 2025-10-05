@@ -31,7 +31,6 @@
 
 <script>
 // ====== CONFIGURATION FIREBASE ======
-// Remplace les valeurs ci-dessous par celles de ton projet Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAFX3QpLLOw2f0JZMSOEobFk_XzRTmBmfA",
     authDomain: "tirageausortnoel2025.firebaseapp.com",
@@ -40,9 +39,7 @@ const firebaseConfig = {
     storageBucket: "tirageausortnoel2025.firebasestorage.app",
     messagingSenderId: "920614742305",
     appId: "1:920614742305:web:54930654b2782a07863660"
-  };
-
-
+};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -69,7 +66,7 @@ db.ref('tirage').on('value', snapshot => {
     updateDropdown(data.alreadyDrawn);
 });
 
-// Tirage
+// ====== TIRAGE AVEC ANIMATION SUSPENSE ======
 document.getElementById("drawBtn").addEventListener("click", async () => {
     const select = document.getElementById("yourName");
     const yourName = select.value;
@@ -80,53 +77,61 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
     const alreadyDrawn = data.alreadyDrawn || {};
     const drawnFor = data.drawnFor || {};
 
-    // Liste des possibles à tirer
+    // Liste des noms possibles à tirer
     let possible = guests.filter(name => name !== yourName && !Object.values(drawnFor).includes(name));
     if (possible.length === 0) {
         document.getElementById("result").textContent = "Désolé, plus personne à tirer.";
         return;
     }
 
-    // Animation suspense : afficher tous les noms initiaux
-    let resultDiv = document.getElementById("result");
-    let i = 0;
-// Animation suspense améliorée
-let duration = 2000; // durée totale en ms
-let intervalTime = 50; // intervalle initial
-let elapsed = 0;
+    const resultDiv = document.getElementById("result");
 
-let suspense = setInterval(() => {
-    let randomName = guests[Math.floor(Math.random() * guests.length)];
-    
-    // Variation visuelle
-    resultDiv.textContent = `🎁 ${randomName} 🎁`;
-    resultDiv.style.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
-    resultDiv.style.fontSize = 20 + Math.random() * 15 + "px";
-    
-    elapsed += intervalTime;
-    // Ralentir progressivement
-    intervalTime += 5; // augmente le délai entre chaque changement
-    
-    clearInterval(suspense);
-    suspense = setInterval(arguments.callee, intervalTime);
-}, intervalTime);
+    // ----- ANIMATION SUSPENSE -----
+    function suspenseAnimation(possible, finalCallback) {
+        let startTime = Date.now();
+        let duration = 2000; // durée totale animation
 
-    setTimeout(() => {
-        clearInterval(suspense);
-        let index = Math.floor(Math.random() * possible.length);
-        let drawn = possible[index];
+        function animate() {
+            let elapsed = Date.now() - startTime;
+            if (elapsed >= duration) {
+                // Choisir le nom final
+                let index = Math.floor(Math.random() * possible.length);
+                let drawn = possible[index];
+                finalCallback(drawn);
+                return;
+            }
 
+            // Nom aléatoire parmi tous les invités pour l'effet suspense
+            let randomName = guests[Math.floor(Math.random() * guests.length)];
+
+            // Variation visuelle
+            resultDiv.textContent = `🎁 ${randomName} 🎁`;
+            resultDiv.style.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
+            resultDiv.style.fontSize = 20 + Math.random() * 15 + "px";
+
+            // Ralentissement progressif
+            let progress = elapsed / duration;
+            let interval = 50 + progress * 200; // commence rapide, finit lent
+            setTimeout(animate, interval);
+        }
+
+        animate();
+    }
+
+    // Lancer l'animation suspense
+    suspenseAnimation(possible, (drawn) => {
         // Mettre à jour Firebase
         alreadyDrawn[yourName] = true;
         drawnFor[yourName] = drawn;
         db.ref('tirage').set({alreadyDrawn, drawnFor});
 
+        // Afficher résultat final
         resultDiv.textContent = `Tu offres un cadeau à : ${drawn} 🎁`;
         launchConfetti();
-    }, 2000);
+    });
 });
 
-// Réinitialiser (avec mot de passe simple)
+// ====== RÉINITIALISER AVEC MOT DE PASSE ======
 document.getElementById("resetBtn").addEventListener("click", () => {
     const code = prompt("🎅 Entre le mot de passe pour réinitialiser :");
     if (code !== "noel2025") {
@@ -190,9 +195,8 @@ window.addEventListener("resize", () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
-</script>
-    <!-- ❄️ NEIGE ANIMÉE -->
-<script>
+
+// ====== NEIGE ANIMÉE ======
 function createSnowflake() {
     const snowflake = document.createElement("div");
     snowflake.classList.add("snowflake");
@@ -202,11 +206,10 @@ function createSnowflake() {
     snowflake.style.opacity = Math.random();
     snowflake.style.fontSize = 10 + Math.random() * 20 + "px";
     document.body.appendChild(snowflake);
-
     setTimeout(() => snowflake.remove(), 10000);
 }
-
 setInterval(createSnowflake, 200);
+
 </script>
 
 <style>
@@ -218,17 +221,9 @@ setInterval(createSnowflake, 200);
     animation-name: fall;
     animation-timing-function: linear;
 }
-
 @keyframes fall {
-    to {
-        transform: translateY(110vh);
-    }
+    to { transform: translateY(110vh); }
 }
-</style>
-
-    <div id="version"></div>
-
-<style>
 #version {
     position: fixed;
     bottom: 10px;
@@ -243,18 +238,13 @@ setInterval(createSnowflake, 200);
 }
 </style>
 
+<div id="version"></div>
+
 <script>
   // Version affichée en bas à droite
-  const version = "v1.0.2"; // 🆕 change ce numéro à chaque mise à jour
+  const version = "v1.0.3"; // 🆕 change ce numéro à chaque mise à jour
   document.getElementById("version").textContent = "Version " + version;
 </script>
 
-
 </body>
 </html>
-
-
-
-
-
-
