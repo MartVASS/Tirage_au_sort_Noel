@@ -90,11 +90,26 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
     // Animation suspense : afficher tous les noms initiaux
     let resultDiv = document.getElementById("result");
     let i = 0;
-    let suspense = setInterval(() => {
-        let randomName = guests[Math.floor(Math.random() * guests.length)];
-        resultDiv.textContent = `🎁 ${randomName} 🎁`;
-        i++;
-    }, 100);
+// Animation suspense améliorée
+let duration = 2000; // durée totale en ms
+let intervalTime = 50; // intervalle initial
+let elapsed = 0;
+
+let suspense = setInterval(() => {
+    let randomName = guests[Math.floor(Math.random() * guests.length)];
+    
+    // Variation visuelle
+    resultDiv.textContent = `🎁 ${randomName} 🎁`;
+    resultDiv.style.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
+    resultDiv.style.fontSize = 20 + Math.random() * 15 + "px";
+    
+    elapsed += intervalTime;
+    // Ralentir progressivement
+    intervalTime += 5; // augmente le délai entre chaque changement
+    
+    clearInterval(suspense);
+    suspense = setInterval(arguments.callee, intervalTime);
+}, intervalTime);
 
     setTimeout(() => {
         clearInterval(suspense);
@@ -237,6 +252,7 @@ setInterval(createSnowflake, 200);
 
 </body>
 </html>
+
 
 
 
