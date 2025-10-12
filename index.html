@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tirage au sort de Noël 🎄</title>
 <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 2em; background-color: #f9f3f0; transition: background-color 1s ease; }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 2em; background-color: #f9f3f0; transition: background-color 1s ease; overflow: hidden; }
     h1 { color: #d32f2f; text-shadow: 1px 1px 2px #fff; }
     button { padding: 0.5em 1em; font-size: 1em; margin-top: 1em; cursor: pointer; border-radius: 8px; border: none; background: #d32f2f; color: white; transition: transform 0.2s; }
     button:hover { transform: scale(1.05); background: #b71c1c; }
@@ -13,26 +13,72 @@
     #result { margin-top: 2em; font-size: 1.5em; color: #2e7d32; font-weight: bold; min-height: 2em; }
     canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; }
 
-    /* ✨ Effet magique sur le résultat final */
     .magic-reveal {
         animation: popIn 0.6s ease forwards, glow 1.5s ease-in-out infinite alternate;
     }
-
     @keyframes popIn {
         0% { transform: scale(0.2); opacity: 0; }
         70% { transform: scale(1.2); opacity: 1; }
         100% { transform: scale(1); }
     }
-
     @keyframes glow {
         from { text-shadow: 0 0 5px #fff, 0 0 10px #d32f2f, 0 0 20px #ff5252; }
         to { text-shadow: 0 0 10px #fff, 0 0 20px #ff1744, 0 0 30px #ff5252; }
     }
+
+    /* ❄️ Écran d’accueil */
+    #introScreen {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle, #fff0f0, #ffcccc);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        transition: opacity 1.5s ease;
+    }
+    #introScreen h1 { color: #b71c1c; font-size: 2.2em; margin-bottom: 1em; text-shadow: 0 0 10px white; }
+    #introBtn {
+        background: #c62828; color: white;
+        padding: 1em 2em; border-radius: 12px; border: none;
+        font-size: 1.2em; cursor: pointer; transition: transform 0.3s, background 0.3s;
+    }
+    #introBtn:hover { transform: scale(1.1); background: #b71c1c; }
+
+    .snowflake {
+        position: fixed;
+        top: -2em;
+        z-index: 10000;
+        pointer-events: none;
+        animation-name: fall;
+        animation-timing-function: linear;
+    }
+    @keyframes fall { to { transform: translateY(110vh); } }
+
+    #version {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        color: #b71c1c;
+        font-size: 0.9em;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 5px 10px;
+        border-radius: 10px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        font-weight: bold;
+    }
 </style>
 </head>
 <body>
-<h1>Tirage au sort de Noël 🎄</h1>
 
+<!-- 🎅 Écran d’accueil -->
+<div id="introScreen">
+    <h1>🎄 Bienvenue au tirage de Noël 🎁</h1>
+    <button id="introBtn">Lancer la magie ✨</button>
+</div>
+
+<h1>Tirage au sort de Noël 🎄</h1>
 <p>Choisis ton nom :</p>
 <select id="yourName"></select>
 <br>
@@ -42,10 +88,9 @@
 <div id="result"></div>
 <canvas id="confetti"></canvas>
 
-<!-- Musique de Noël -->
-<audio id="bgMusic" loop>
+<!-- 🔊 Musique -->
+<audio id="bgMusic" loop playsinline>
   <source src="christmas-party-time-249613.mp3" type="audio/mpeg">
-  Ton navigateur ne supporte pas la musique de fond.
 </audio>
 <button id="musicToggle" style="position: fixed; bottom: 10px; left: 10px; z-index: 10001; padding:5px 10px;">🔊 Musique</button>
 
@@ -67,16 +112,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ====== LISTE DES INVITÉS ======
 const guests = ["Martin", "Lénaëlle", "Emilie", "Patricia", "Michel", "Quentin", "Tan","Jean-Michel","Lionel","Antoine","Marie","Alex","Didier"];
 
-// ====== FUNCTIONS ======
+// ====== FONCTIONS ======
 function updateDropdown(alreadyDrawn) {
     const select = document.getElementById("yourName");
     select.innerHTML = '';
     guests.forEach(name => {
         if (!alreadyDrawn || !alreadyDrawn[name]) {
-            let option = document.createElement("option");
+            const option = document.createElement("option");
             option.value = name;
             option.textContent = name;
             select.appendChild(option);
@@ -84,13 +128,12 @@ function updateDropdown(alreadyDrawn) {
     });
 }
 
-// Écoute la base de données pour la synchro
 db.ref('tirage').on('value', snapshot => {
     const data = snapshot.val() || {};
     updateDropdown(data.alreadyDrawn);
 });
 
-// ====== TIRAGE AVEC ANIMATION SUSPENSE ======
+// ====== ANIMATION SUSPENSE ======
 document.getElementById("drawBtn").addEventListener("click", async () => {
     const select = document.getElementById("yourName");
     const yourName = select.value;
@@ -109,28 +152,20 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
 
     const resultDiv = document.getElementById("result");
 
-    // ----- ANIMATION SUSPENSE -----
     function suspenseAnimation(possible, finalCallback) {
-        let startTime = Date.now();
+        let start = Date.now();
         let duration = 2000;
-
         function animate() {
-            let elapsed = Date.now() - startTime;
+            let elapsed = Date.now() - start;
             if (elapsed >= duration) {
-                let index = Math.floor(Math.random() * possible.length);
-                let drawn = possible[index];
+                let drawn = possible[Math.floor(Math.random() * possible.length)];
                 finalCallback(drawn);
                 return;
             }
-
             let randomName = guests[Math.floor(Math.random() * guests.length)];
             resultDiv.textContent = `🎁 ${randomName} 🎁`;
             resultDiv.style.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
-            resultDiv.style.fontSize = 20 + Math.random() * 15 + "px";
-
-            let progress = elapsed / duration;
-            let interval = 50 + progress * 200;
-            setTimeout(animate, interval);
+            setTimeout(animate, 50 + elapsed / 10);
         }
         animate();
     }
@@ -139,12 +174,9 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
         alreadyDrawn[yourName] = true;
         drawnFor[yourName] = drawn;
         db.ref('tirage').set({alreadyDrawn, drawnFor});
-
         resultDiv.textContent = `Tu offres un cadeau à : ${drawn} 🎁`;
-        resultDiv.classList.add("magic-reveal"); // ✨ effet magique ajouté ici
+        resultDiv.classList.add("magic-reveal");
         launchConfetti();
-
-        // Petite transition de fond festive
         document.body.style.backgroundColor = "#fff0f0";
         setTimeout(() => document.body.style.backgroundColor = "#f9f3f0", 2000);
     });
@@ -153,10 +185,7 @@ document.getElementById("drawBtn").addEventListener("click", async () => {
 // ====== RÉINITIALISER AVEC MOT DE PASSE ======
 document.getElementById("resetBtn").addEventListener("click", () => {
     const code = prompt("🎅 Entre le mot de passe pour réinitialiser :");
-    if (code !== "noel2025") {
-        alert("⛔ Mot de passe incorrect !");
-        return;
-    }
+    if (code !== "noel2025") return alert("⛔ Mot de passe incorrect !");
     if (!confirm("Veux-tu vraiment tout réinitialiser ?")) return;
     db.ref('tirage').set({alreadyDrawn: {}, drawnFor: {}});
     document.getElementById("result").textContent = "";
@@ -176,7 +205,6 @@ function createConfetti() {
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height - canvas.height,
             r: Math.random() * 6 + 4,
-            d: Math.random() * 20 + 10,
             color: `hsl(${Math.random()*360}, 100%, 50%)`,
             tilt: Math.random() * 10 - 10,
             tiltAngleIncremental: Math.random() * 0.07 + 0.05,
@@ -184,7 +212,6 @@ function createConfetti() {
         });
     }
 }
-
 function drawConfetti() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     confettis.forEach((c, i) => {
@@ -200,83 +227,65 @@ function drawConfetti() {
         if (c.y > canvas.height) confettis.splice(i, 1);
     });
 }
-
 function launchConfetti() {
     confettis = [];
     createConfetti();
-    let confettiInterval = setInterval(() => {
+    let interval = setInterval(() => {
         drawConfetti();
-        if (confettis.length === 0) clearInterval(confettiInterval);
+        if (confettis.length === 0) clearInterval(interval);
     }, 20);
 }
-
 window.addEventListener("resize", () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
 
-// ====== NEIGE ANIMÉE ======
+// ====== NEIGE ======
 function createSnowflake() {
-    const snowflake = document.createElement("div");
-    snowflake.classList.add("snowflake");
-    snowflake.textContent = "❄️";
-    snowflake.style.left = Math.random() * 100 + "vw";
-    snowflake.style.animationDuration = 5 + Math.random() * 5 + "s";
-    snowflake.style.opacity = Math.random();
-    snowflake.style.fontSize = 10 + Math.random() * 20 + "px";
-    document.body.appendChild(snowflake);
-    setTimeout(() => snowflake.remove(), 10000);
+    const flake = document.createElement("div");
+    flake.classList.add("snowflake");
+    flake.textContent = "❄️";
+    flake.style.left = Math.random() * 100 + "vw";
+    flake.style.animationDuration = 5 + Math.random() * 5 + "s";
+    flake.style.opacity = Math.random();
+    flake.style.fontSize = 10 + Math.random() * 20 + "px";
+    document.body.appendChild(flake);
+    setTimeout(() => flake.remove(), 10000);
 }
 setInterval(createSnowflake, 200);
 
-// ====== MUSIQUE DE FOND ======
+// ====== MUSIQUE ======
 const bgMusic = document.getElementById("bgMusic");
 const musicToggle = document.getElementById("musicToggle");
-window.addEventListener("click", () => {
-    if (bgMusic.paused) bgMusic.play().catch(() => {});
-}, { once: true });
+
 musicToggle.addEventListener("click", () => {
     if (bgMusic.paused) {
-        bgMusic.play();
+        bgMusic.play().catch(()=>{});
         musicToggle.textContent = "🔇 Musique";
     } else {
         bgMusic.pause();
         musicToggle.textContent = "🔊 Musique";
     }
 });
+
+// ====== ÉCRAN D’ACCUEIL ======
+document.getElementById("introBtn").addEventListener("click", async () => {
+    const intro = document.getElementById("introScreen");
+    intro.style.opacity = "0";
+    setTimeout(() => intro.style.display = "none", 1500);
+    try {
+        await bgMusic.play();
+        musicToggle.textContent = "🔇 Musique";
+    } catch (e) {
+        console.log("Lecture musique différée sur iPhone");
+    }
+});
 </script>
-
-<style>
-.snowflake {
-    position: fixed;
-    top: -2em;
-    z-index: 10000;
-    pointer-events: none;
-    animation-name: fall;
-    animation-timing-function: linear;
-}
-@keyframes fall { to { transform: translateY(110vh); } }
-
-#version {
-    position: fixed;
-    bottom: 10px;
-    right: 10px;
-    color: #b71c1c;
-    font-size: 0.9em;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 5px 10px;
-    border-radius: 10px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.2);
-    font-weight: bold;
-}
-</style>
 
 <div id="version"></div>
 <script>
-  const version = "v1.0.7"; // 🎅 nouvelle version avec effet magique !
+  const version = "v1.1.0"; 
   document.getElementById("version").textContent = "Version " + version;
 </script>
-
 </body>
 </html>
-
